@@ -1,4 +1,5 @@
 ﻿using FamilyTree.Domain.Common;
+using FamilyTree.Domain.Entities.Tree;
 using System.Collections.Generic;
 
 namespace FamilyTree.Domain.Entities.PersonContent
@@ -16,5 +17,7 @@ namespace FamilyTree.Domain.Entities.PersonContent
         public DataCategory DataCategory { get; set; }
 
         public ICollection<DataHolder> DataHolders { get; set; }
+
+        public ICollection<PersonToDataBlocks> Participants { get; set; }
     }
 }
