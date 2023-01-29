@@ -19,7 +19,5 @@ namespace FamilyTree.Domain.Entities.Tree
         public Image AvatarImage { get; set; }
 
         public ICollection<DataCategory> DataCategories { get; set; }
-
-        public ICollection<CommonEventToPersons> CommonEvent { get; set; }
     }
 }

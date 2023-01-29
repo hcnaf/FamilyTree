@@ -40,13 +40,15 @@ namespace FamilyTree.WebUI.Controllers.People
         [HttpGet]
         public async Task<ActionResult<string>> GetRelationsByPeopleIds(int treeId, int targetPersonId, int personId)
         {
-            return await Mediator.Send(new GetRelationsByPeopleIdsQuery()
+            var res =  await Mediator.Send(new GetRelationsByPeopleIdsQuery()
             {
                 UserId = _currentUserService.UserId,
                 TargetPersonId = targetPersonId,
                 PersonId = personId,
                 FamilyTreeId = treeId
             });
+
+            return res;
         }
 
         [HttpPut]

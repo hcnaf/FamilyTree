@@ -682,30 +682,10 @@
                         <div class="tabs-buttons__button tab-button-images">Изображения</div>
                         <div class="tabs-buttons__button tab-button-videos">Видео</div>
                         <div class="tabs-buttons__button tab-button-audios">Аудио</div>
+                        <div class="tabs-buttons__button tab-button-participants">Участники</div>
                     </div>
                 </div>                
             </div>
         </div>
     </div>
 </div>
-
-<partial name="_PersonContentModals"/>
-<partial name="_PrivacyLevelModal" />
-<partial name="_FamilyTreeModals" />
-
-@section ModalPersonInfo
-{
-    <div id="modalBlockPerson">
-        <div id="visibleZone">
-            <div id="headerModal"></div>
-            <div id="bodyModal">
-                <div id="textModal"></div>
-            </div>
-            <div class="footerModal">
-                <div id="delete-person-button" data-id="">Удалить человека</div>
-                <div id="editPersonModal" data-id="">Подробнее...</div>
-            </div>            
-        </div>
-        <div id="unvisibleZone"></div>
-    </div>
-}

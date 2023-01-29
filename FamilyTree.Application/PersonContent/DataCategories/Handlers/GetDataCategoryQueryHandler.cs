@@ -6,8 +6,11 @@ using FamilyTree.Application.PersonContent.DataCategories.ViewModels;
 using FamilyTree.Application.PersonContent.DataHolders.ViewModels;
 using FamilyTree.Application.Privacy.ViewModels;
 using FamilyTree.Domain.Entities.PersonContent;
+using FamilyTree.Domain.Entities.Tree;
+using FamilyTree.Domain.Enums.PersonContent;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -33,8 +36,10 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
         {
             DataCategory dataCategory = await _context.DataCategories
                 .Include(dc => dc.DataBlocks)
-                .ThenInclude(db => db.DataHolders)
-                .ThenInclude(dh => dh.Privacy)
+                    .ThenInclude(db => db.DataHolders)
+                        .ThenInclude(dh => dh.Privacy)
+                .Include(dc => dc.DataBlocks)
+                    .ThenInclude(db => db.Participants)
                 .SingleOrDefaultAsync(dc => dc.CreatedBy.Equals(request.UserId) &&
                                             dc.Id == request.DataCategoryId,
                                       cancellationToken);
@@ -63,6 +68,7 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
                     Title = dataBlock.Title
                 };
                 dataBlockDto.DataHolders = new List<DataHolderDto>();
+                dataBlockDto.Participants = new List<ParticipantVM>();
 
                 List<DataHolder> dataHolders = dataBlock.DataHolders
                     .OrderBy(dh => dh.OrderNumber)
@@ -100,6 +106,29 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
 
                     dataBlockDto.DataHolders.Add(dataHolderDto);
                 }
+
+                var people = dataBlock.Participants != null && dataBlock.Participants.Any()
+                    ? await _context.People
+                        .AsNoTracking()
+                        .Include(x => x.DataCategories)
+                            .ThenInclude(x => x.DataBlocks)
+                                .ThenInclude(x => x.DataHolders)
+                        .Where(x => dataBlock.Participants.Select(p => p.PersonId).Contains(x.Id))
+                        .ToArrayAsync()
+                    : Array.Empty<Person>();
+
+                var participants = people
+                    .Select(x => new ParticipantVM
+                    {
+                        Id = x.Id,
+                        Name = x.DataCategories
+                            ?.FirstOrDefault(dc => dc.DataCategoryType == DataCategoryType.PersonInfo).DataBlocks
+                            ?.FirstOrDefault().DataHolders
+                            ?.FirstOrDefault(x => x.DataHolderType == DataHolderType.Surname).Data,
+                        IsSelected = true,
+                    }).ToList();
+
+                dataBlockDto.Participants = participants;
 
                 result.DataBlocks.Add(dataBlockDto);
             }

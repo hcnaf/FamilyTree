@@ -34,7 +34,7 @@ namespace FamilyTree.Application.PersonContent.DataHolders.Handlers
                 throw new NotFoundException(nameof(DataHolder), request.Id);
 
             dataHolder.Data = _dateDataTypes.Contains(dataHolder.DataHolderType)
-                ? DateTime.Parse(dataHolder.Data).ToString("dd/MM/yyyy")
+                ? DateTime.Parse(request.Data).ToString("dd-MM-yyyy")
                 : request.Data;
 
             await _context.SaveChangesAsync(cancellationToken);
