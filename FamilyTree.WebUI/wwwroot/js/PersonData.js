@@ -55,7 +55,8 @@ const CopyObjectTypes = {
     DataHolder: 2,
     Image: 3,
     Video: 4,
-    Audio: 5
+    Audio: 5,
+    Participant: 6
 };
 const CopyObjectSessionStorageKey = "COPY_OBJECT";
 
@@ -80,6 +81,7 @@ let g_copyObject = {
 let g_isUploadingImage = false;
 let g_isUploadingVideo = false;
 let g_isUploadingAudio = false;
+let g_isUploadingParticipant = false;
 
 async function LoadPersonData(personId) {
     g_currentPerson = await GetPersonData(personId).catch((r) => {
@@ -182,10 +184,10 @@ async function GetAudios(dataBlockId) {
 }
 
 async function GetParticipants(dataBlockId) {
-    const result = await $ajax({
+    const result = await $.ajax({
         type: "GET",
         dataType: "json",
-        url: "/Media/Participant/GetAll?dataBLockId=" + dataBlockId
+        url: "/Media/Participant/GetAll?dataBlockId=" + dataBlockId
     });
 
     return result;
@@ -663,6 +665,30 @@ async function DeleteAudio(audioId) {
     return result;
 }
 
+// Заполнение атрибутов персонажа
+function FillPerson(person, data) {
+    $(person).attr("data-value", data.Id);
+
+    $(person).find(".surname")[0].innerText = data.Surname;
+
+    $(person).find(".name")[0].innerText = data.Name;
+
+    $(person).find(".middlename")[0].innerText = data.Middlename;
+    // Дополнение: получение даты рождения для вывода в карточке человека.
+
+    $(person).find(".birthday")[0].innerText = data.Birthday;
+    // Дополнение: получение даты рождения для вывода в карточке человека.
+
+    // Текстовое представление изображения
+    if (data.AvatarImageId != null) {
+        person.firstElementChild.firstElementChild.src = "/Media/Image/GetFile/" + data.AvatarImageId;
+        person.firstElementChild.firstElementChild.decoding = "async";
+    } else {
+        person.firstElementChild.firstElementChild.src = "/images/person.png";
+        person.firstElementChild.firstElementChild.decoding = "async";
+    }
+}
+
 //Events
 function InitPersonDataBlockButtonEvents() {
     $("#person-data-block")
@@ -761,6 +787,12 @@ function InitPersonDataBlockButtonEvents() {
     $("#add-audio-submit-button")
         .click(OnAddAudioSubmitButtonClick);
 
+    $("#add-participant-submit-button")
+        .click(OnAddParticipantSubmitButtonClick);
+
+
+    
+
     $("#save-audio-submit-button")
         .click(OnSaveAudioSubmitButtonClick);
 
@@ -847,6 +879,7 @@ function OnTabButtonClick(event) {
 }
 
 function OnDataCategoryClick(event) {
+    /*GetParticipants();*/
     if ($(event.target).is("input")) return;
 
     let dataCategoryId = $(event.currentTarget).attr("data-id");
@@ -939,6 +972,16 @@ function OnImageClick(event) {
     UpdateImageSlider(imageId);
 
     $("#image-carousel-modal").modal("show");
+}
+
+function OnPartClick(event) {
+    if ($(event.target).is("input")) return;
+
+    let partId = $(event.currentTarget).attr("data-id");
+
+    UpdateParticipants();
+
+   /* $("#image-carousel-modal").modal("show")*/;
 }
 
 function OnVideoClick(event) {
@@ -1181,17 +1224,59 @@ function OnAddAudioSubmitButtonClick() {
         g_isUploadingAudio = false;
         audioModal.find("#audio-file").prop("disabled", false);
     });
-    CreateParticipant(formData).then((result) => {
-        audioModal.modal("hide");
-        RefreshParticipants().then((val) => UpdateParticipants());
-        g_isUploadingAudio = false;
-        audioModal.find("#participant").prop("disabled", false);
-    }, (r) => {
-        alert("Ошибка при создании аудио.");
-        g_isUploadingAudio = false;
-        audioModal.find("#participant").prop("disabled", false);
-    });
+    //CreateParticipant(formData).then((result) => {
+    //    audioModal.modal("hide");
+    //    RefreshParticipants().then((val) => UpdateParticipants());
+    //    g_isUploadingAudio = false;
+    //    audioModal.find("#participant").prop("disabled", false);
+    //}, (r) => {
+    //    alert("Ошибка при создании аудио.");
+    //    g_isUploadingAudio = false;
+    //    audioModal.find("#participant").prop("disabled", false);
+    //});
 }
+
+
+
+function OnAddParticipantSubmitButtonClick() {
+    if (g_isUploadingParticipant) return;
+
+    let partModal = $("#add-participant-modal");
+
+    partModal.modal("hide");
+    RefreshParticipants().then((val) => UpdateParticipants());
+    g_isUploadingParticipant = false;
+    partModal.find("#participant").prop("disabled", false);
+
+    /*let files = partModal.find("#audio-file")[0].files;*/
+
+    //if (files.length == 0) {
+    //    alert("Пожалуйста выберите файл.");
+    //    return;
+    //}
+
+    //let formData = new FormData();
+    //formData.append("DataBlockId", g_currentDataBlock.Id);
+    //formData.append("Title", audioModal.find("#audio-title").val());
+    //formData.append("Description", audioModal.find("#audio-desc").val());
+    //formData.append("AudioFile", files[0]);
+
+    //g_isUploadingAudio = true;
+    //audioModal.find("#audio-file").prop("disabled", true);
+
+  
+    //CreateParticipant(formData).then((result) => {
+    //    audioModal.modal("hide");
+    //    RefreshParticipants().then((val) => UpdateParticipants());
+    //    g_isUploadingAudio = false;
+    //    audioModal.find("#participant").prop("disabled", false);
+    //}, (r) => {
+    //    alert("Ошибка при создании аудио.");
+    //    g_isUploadingAudio = false;
+    //    audioModal.find("#participant").prop("disabled", false);
+    //});
+}
+
 
 function OnEditElementButtonClick() {
     switch (g_currentAddButtonActionType) {
@@ -1830,12 +1915,12 @@ function UpdateParticipants() {
 
         g_currentDataBLockParticipants
         .forEach((item) => {
-            AddItemToParticipants(item);
+            AddItemToParticipant(item);
         });
 
     $("#person-data-block")
-        .find(".audios .audios__item .audio__play")
-        .click(OnPlayAudioButtonClick);
+        .find(".participants .participants__item")
+        .click(OnPartClick);
 }
 
 function UpdateVideoModal(videoId) {
@@ -2281,6 +2366,37 @@ function AddItemToImages(image) {
         .find(".images")[0]
         .appendChild(imageElement);
 }
+
+function AddItemToParticipant(part) {
+    let imageElement = document.createElement("div");
+    imageElement.classList.add("part");
+    imageElement.classList.add("participants__item");
+    imageElement.setAttribute("data-id", part.Id);
+
+    let selectorElement = document.createElement("div");
+    selectorElement.classList.add("part__selector");
+
+    let checkboxElement = document.createElement("div");
+    checkboxElement.classList.add("checkbox");
+
+    let inputElement = document.createElement("input");
+    inputElement.type = "checkbox";
+
+    checkboxElement.appendChild(inputElement);
+    selectorElement.appendChild(checkboxElement);
+
+    //let imgElement = document.createElement("img");
+    //imgElement.src = "/Media/Image/GetFile/" + image.Id;
+    //imgElement.decoding = "async";
+
+    partElement.appendChild(selectorElement);
+   /* imageElement.appendChild(imgElement);*/
+
+    $("#person-data-block")
+        .find(".partes")[0]
+        .appendChild(partElement);
+}
+
 
 function AddItemToVideos(video) {
     let videoElement = document.createElement("div");
@@ -2769,7 +2885,7 @@ function GetSelectedParticipantIds() {
     let result = [];
 
     $("#person-data-block")
-        .find(".participants .participant__item")
+        .find(".participants .participants__item")
         .each((i, el) => {
             if ($(el).find("input[type=\"checkbox\"]").is(":checked")) {
                 result.push(el.getAttribute("data-id"));
@@ -2787,6 +2903,11 @@ function GetImageSliderCurrentImageId() {
 
 function GetVideoModalCurrentVideoId() {
     return $("#video-modal .videos-list .videos-list__item_active")
+        .attr("data-id");
+}
+
+function GetPartModalCurrentPartId() {
+    return $("#part-modal .part-list .part-list__item_active")
         .attr("data-id");
 }
 

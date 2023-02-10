@@ -25,11 +25,12 @@ namespace FamilyTree.WebUI.Controllers.Media
         [HttpGet]
         public async Task<ActionResult<List<ImageDto>>> GetAll(int dataBlockId)
         {
-            return await Mediator.Send(new GetImagesQuery()
+            var b = await Mediator.Send(new GetImagesQuery()
             {
                 UserId = _currentUserService.UserId,
                 DataBlockId = dataBlockId
             });
+            return b;
         }
 
         [HttpGet]
