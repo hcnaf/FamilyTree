@@ -447,7 +447,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="add-participant-modal" tabindex="-1" role="dialog" aria-hidden="true" onClick='GetParticipants()'>
+<div class="modal fade" id="add-participant-modal" tabindex="-1" role="dialog" aria-hidden="true" >
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -461,11 +461,19 @@
                             <div class="imgBlock">
                                 <img src="~/images/person.png" class="imgPerson" />
                             </div>
-                            <div>
-                                <div class="surname"></div>
-                                <div class="name"></div>
-                                <div class="middlename"></div>
-                                <div class="birthday"></div>
+                            <div class="part-modal">
+                               @* @foreach (var item in ViewBag.Pers)
+                                    {
+                                        <div class="surname">@item.DataBlockId</div>
+                                        <div class="name"></div>
+                                        <div class="middlename"></div>
+                                        <div class="birthday"></div>
+                                    }*@
+                                    <div class="dataid text-center"></div>
+                                    <div class="surname"></div>
+                                    <div class="name"></div>
+                                    <div class="middlename"></div>
+                                    <div class="birthday"></div>
                             </div>
                             <div class="btn btn-default star-button">
                                 <i class="fas fa-star"></i>

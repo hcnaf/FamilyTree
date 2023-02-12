@@ -193,6 +193,38 @@ async function GetParticipants(dataBlockId) {
     return result;
 }
 
+
+async function GetParticipantsAll() {
+    const result = await $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: "/Media/Participant/GetAll2"
+    });
+
+    result.forEach(function (elem) {
+        $(".part-modal").find(".dataid")[0].innerText = elem.DataBlockId;
+
+
+        if (elem.DataHolderType == "Surname") {
+            $(".part-modal").find(".surname")[0].innerText = elem.Data;
+        }
+        if (elem.DataHolderType = "Name") {
+            $(".part-modal").find(".name")[0].innerText = elem.Data;
+            }
+        if (elem.DaHolderType = "Birthday") {
+            $(".part-modal").find(".birthday")[0].innerText = elem.Data;
+            } 
+        
+
+    })
+
+    
+
+    return result;
+}
+
+
+
 /**
  * Send request to create DataCategory. Returns created DataCategory object Id or -1, if not created.
  * @param {object} dataCategory Object { CategoryType: string, Name: string, PersonId: number }
