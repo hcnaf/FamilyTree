@@ -262,6 +262,23 @@ function CreateDataBlock(dataBlock) {
     return result;
 }
 
+
+async function CreatePart() {
+    let result = -1;
+
+    await $.ajax({
+      
+        type: "POST",
+        data: dataHolder,
+        url: "/PersonContent/DataBlock/UpdateParticipants",
+        success: function (response) {
+            result = response;
+        }
+    });
+
+    return result;
+}
+
 function CreateDataHolder(dataHolder) {
     let result = -1;
 
@@ -360,6 +377,7 @@ async function CreateAudio(audio) {
 
     return result;
 }
+
 
 function UpdateDataCategoryName(dataCategory) {
     let result = false;
