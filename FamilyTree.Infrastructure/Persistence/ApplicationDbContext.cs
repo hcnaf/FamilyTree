@@ -56,6 +56,8 @@ namespace FamilyTree.Infrastructure.Persistence
 
         public DbSet<DataBlockAudio> DataBlockAudios { get; set; }
 
+        public DbSet<PersonToDataBlocks> PersonToDataBlocks { get; set; }
+
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {
             foreach (EntityEntry<AuditableEntity> entry in ChangeTracker.Entries<AuditableEntity>())

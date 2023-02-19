@@ -63,7 +63,7 @@ namespace FamilyTree.WebUI.Controllers.PersonContent
             return NoContent();
         }
 
-        [HttpPut]
+        [HttpPost]
         public async Task<ActionResult> UpdateParticipants(UpdateDataBlockParticipantsCommand command)
         {
             await Mediator.Send(command);

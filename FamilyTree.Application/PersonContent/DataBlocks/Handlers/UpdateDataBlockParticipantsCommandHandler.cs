@@ -30,8 +30,8 @@ namespace FamilyTree.Application.PersonContent.DataBlocks.Handlers
             if (dataBlock == null)
                 throw new NotFoundException(nameof(DataBlock), request.BlockId);
 
-            if (dataBlock.DataCategory.PersonId != request.UserId)
-                throw new InvalidOperationException("Participants can be edited only from original DataBlock.");
+            //if (dataBlock.DataCategory.PersonId != request.UserId)
+            //    throw new InvalidOperationException("Participants can be edited only from original DataBlock.");
 
             CollectionsMerger.Merge(
                 dataBlock.Participants,

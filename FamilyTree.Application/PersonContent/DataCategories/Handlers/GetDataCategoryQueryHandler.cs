@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -38,8 +39,6 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
                 .Include(dc => dc.DataBlocks)
                     .ThenInclude(db => db.DataHolders)
                         .ThenInclude(dh => dh.Privacy)
-                .Include(dc => dc.DataBlocks)
-                    .ThenInclude(db => db.Participants)
                 .SingleOrDefaultAsync(dc => dc.CreatedBy.Equals(request.UserId) &&
                                             dc.Id == request.DataCategoryId,
                                       cancellationToken);
@@ -60,6 +59,16 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
                 .OrderBy(db => db.OrderNumber)
                 .ToList();
 
+            var participantsDataBlocks = await _context.DataBlocks
+                .Include(x => x.DataHolders)
+                        .ThenInclude(dh => dh.Privacy)
+                .Where(x => x.Participants.Select(x => x.PersonId).Contains(dataCategory.PersonId))
+                .ToArrayAsync();
+
+            dataBlocks.AddRange(participantsDataBlocks);
+
+            dataBlocks = dataBlocks.Distinct().ToList();
+
             foreach (DataBlock dataBlock in dataBlocks)
             {
                 DataBlockDto dataBlockDto = new DataBlockDto()
@@ -68,7 +77,6 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
                     Title = dataBlock.Title
                 };
                 dataBlockDto.DataHolders = new List<DataHolderDto>();
-                dataBlockDto.Participants = new List<ParticipantVM>();
 
                 List<DataHolder> dataHolders = dataBlock.DataHolders
                     .OrderBy(dh => dh.OrderNumber)
@@ -106,29 +114,6 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
 
                     dataBlockDto.DataHolders.Add(dataHolderDto);
                 }
-
-                var people = dataBlock.Participants != null && dataBlock.Participants.Any()
-                    ? await _context.People
-                        .AsNoTracking()
-                        .Include(x => x.DataCategories)
-                            .ThenInclude(x => x.DataBlocks)
-                                .ThenInclude(x => x.DataHolders)
-                        .Where(x => dataBlock.Participants.Select(p => p.PersonId).Contains(x.Id))
-                        .ToArrayAsync()
-                    : Array.Empty<Person>();
-
-                var participants = people
-                    .Select(x => new ParticipantVM
-                    {
-                        Id = x.Id,
-                        Name = x.DataCategories
-                            ?.FirstOrDefault(dc => dc.DataCategoryType == DataCategoryType.PersonInfo).DataBlocks
-                            ?.FirstOrDefault().DataHolders
-                            ?.FirstOrDefault(x => x.DataHolderType == DataHolderType.Surname).Data,
-                        IsSelected = true,
-                    }).ToList();
-
-                dataBlockDto.Participants = participants;
 
                 result.DataBlocks.Add(dataBlockDto);
             }

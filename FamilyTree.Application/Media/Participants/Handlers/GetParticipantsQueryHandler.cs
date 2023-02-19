@@ -28,11 +28,9 @@ namespace FamilyTree.Application.Media.Participants.Handlers
 
         public async Task<List<ParticipantVM>> Handle(GetParticipantsQuery request, CancellationToken cancellationToken)
         {
-            var participants = await _context.DataBlocks
-                .AsNoTracking()
-                .Where(db => db.Id == request.DataBlockId)
-                .Select(x => x.Participants)
-                .SingleOrDefaultAsync();
+            var participants = await _context.PersonToDataBlocks
+                .Where(x => x.DataBlockId == request.DataBlockId)
+                .ToListAsync();
 
             var people = participants != null && participants.Any()
                     ? await _context.People
@@ -44,16 +42,22 @@ namespace FamilyTree.Application.Media.Participants.Handlers
                         .ToArrayAsync()
                     : Array.Empty<Person>();
 
-            var result = people
-                .Select(x => new ParticipantVM
-                {
-                    Id = x.Id,
-                    Name = x.DataCategories
+            var dataHoldersByParticipant = people.ToDictionary(x => x, x => x.DataCategories
                         ?.FirstOrDefault(dc => dc.DataCategoryType == DataCategoryType.PersonInfo).DataBlocks
-                        ?.FirstOrDefault().DataHolders
-                        ?.FirstOrDefault(x => x.DataHolderType == DataHolderType.Surname).Data,
-                    IsSelected = true,
-                }).ToList();
+                        ?.FirstOrDefault().DataHolders);
+
+            var result = dataHoldersByParticipant.Select(x => new ParticipantVM
+            {
+                Id = x.Key.Id,
+                IsSelected = true,
+                DataHolders = x.Value.Select(dh => new ParticipantDataHolderVM
+                {
+                    Data = dh.Data,
+                    DataBlockId = dh.DataBlockId,
+                    DataHolderType = dh.DataHolderType.ToString(),
+                    IsDeletable = dh.IsDeletable ?? false,
+                }).ToList(),
+            }).ToList();
 
             return result;
         }

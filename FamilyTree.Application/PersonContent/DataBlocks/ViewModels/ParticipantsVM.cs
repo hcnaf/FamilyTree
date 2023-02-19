@@ -8,8 +8,17 @@ namespace FamilyTree.Application.PersonContent.DataBlocks.ViewModels
     {
         public int Id { get; set; }
 
-        public string Name { get; set; }
-
         public bool IsSelected { get; set; }
+
+        public ICollection<ParticipantDataHolderVM> DataHolders { get; set; }
     }
+
+    public class ParticipantDataHolderVM
+    {
+        public string DataHolderType { get; set; }
+        public string Data { get; set; }
+        public bool IsDeletable { get; set; }
+        public int DataBlockId { get; set; }
+    }
+
 }

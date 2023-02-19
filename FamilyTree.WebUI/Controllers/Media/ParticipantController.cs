@@ -37,6 +37,9 @@ namespace FamilyTree.WebUI.Controllers.Media
             {
                 DataBlockId = dataBlockId
             });
+
+            ViewBag.Participants = a;
+
             return a;
         }
 

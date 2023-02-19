@@ -69,7 +69,7 @@ let g_currentDataBlock = null;
 let g_currentDataBlockImages = null;
 let g_currentDataBlockVideos = null;
 let g_currentDataBlockAudios = null;
-let g_currentDataBLockParticipants = null;
+let g_currentDataBlockParticipants = null;
 let g_openedAudioId = null;
 let g_currentAddButtonActionType = null;
 let g_editElementId = null;
@@ -192,38 +192,6 @@ async function GetParticipants(dataBlockId) {
 
     return result;
 }
-
-
-async function GetParticipantsAll() {
-    const result = await $.ajax({
-        type: "GET",
-        dataType: "json",
-        url: "/Media/Participant/GetAll2"
-    });
-
-    result.forEach(function (elem) {
-        $(".part-modal").find(".dataid")[0].innerText = elem.DataBlockId;
-
-
-        if (elem.DataHolderType == "Surname") {
-            $(".part-modal").find(".surname")[0].innerText = elem.Data;
-        }
-        if (elem.DataHolderType = "Name") {
-            $(".part-modal").find(".name")[0].innerText = elem.Data;
-            }
-        if (elem.DaHolderType = "Birthday") {
-            $(".part-modal").find(".birthday")[0].innerText = elem.Data;
-            } 
-        
-
-    })
-
-    
-
-    return result;
-}
-
-
 
 /**
  * Send request to create DataCategory. Returns created DataCategory object Id or -1, if not created.
@@ -373,6 +341,19 @@ async function CreateAudio(audio) {
             }
             return myXhr;
         }
+    });
+
+    return result;
+}
+
+async function CreateParticipants() {
+    const result = await $.ajax({
+        type: "POST",
+        data: {
+            blockId: g_currentDataBlock.Id,
+            participantIds: g_currentDataBlockParticipants.filter(x => x.IsSelected).map(x => x.Id),
+        },
+        url: "/PersonContent/DataBlock/UpdateParticipants",
     });
 
     return result;
@@ -1289,42 +1270,16 @@ function OnAddAudioSubmitButtonClick() {
 
 
 function OnAddParticipantSubmitButtonClick() {
-    if (g_isUploadingParticipant) return;
-
     let partModal = $("#add-participant-modal");
 
     partModal.modal("hide");
     RefreshParticipants().then((val) => UpdateParticipants());
-    g_isUploadingParticipant = false;
-    partModal.find("#participant").prop("disabled", false);
-
-    /*let files = partModal.find("#audio-file")[0].files;*/
-
-    //if (files.length == 0) {
-    //    alert("Пожалуйста выберите файл.");
-    //    return;
-    //}
-
-    //let formData = new FormData();
-    //formData.append("DataBlockId", g_currentDataBlock.Id);
-    //formData.append("Title", audioModal.find("#audio-title").val());
-    //formData.append("Description", audioModal.find("#audio-desc").val());
-    //formData.append("AudioFile", files[0]);
-
-    //g_isUploadingAudio = true;
-    //audioModal.find("#audio-file").prop("disabled", true);
 
   
-    //CreateParticipant(formData).then((result) => {
-    //    audioModal.modal("hide");
-    //    RefreshParticipants().then((val) => UpdateParticipants());
-    //    g_isUploadingAudio = false;
-    //    audioModal.find("#participant").prop("disabled", false);
-    //}, (r) => {
-    //    alert("Ошибка при создании аудио.");
-    //    g_isUploadingAudio = false;
-    //    audioModal.find("#participant").prop("disabled", false);
-    //});
+    CreateParticipants().then((result) => {
+       RefreshParticipants().then((val) => UpdateParticipants());
+       partModal.find("#participant").prop("disabled", false);
+    });
 }
 
 
@@ -1960,10 +1915,10 @@ function UpdateAudios() {
 function UpdateParticipants() {
     ClearParticipants();
 
-    if (g_currentDataBLockParticipants == null)
+    if (g_currentDataBlockParticipants == null)
         return;
 
-        g_currentDataBLockParticipants
+        g_currentDataBlockParticipants
         .forEach((item) => {
             AddItemToParticipant(item);
         });
@@ -2082,7 +2037,7 @@ async function RefreshAudios() {
 }
 
 async function RefreshParticipants() {
-    g_currentDataBLockParticipants = await GetParticipants(g_currentDataBlock.Id);
+    g_currentDataBlockParticipants = await GetParticipants(g_currentDataBlock.Id);
 }
 
 function OpenDefaultDataBlockTab() {
@@ -2418,13 +2373,13 @@ function AddItemToImages(image) {
 }
 
 function AddItemToParticipant(part) {
-    let imageElement = document.createElement("div");
-    imageElement.classList.add("part");
-    imageElement.classList.add("participants__item");
-    imageElement.setAttribute("data-id", part.Id);
+    let participantElement = document.createElement("div");
+    participantElement.classList.add("participant");
+    participantElement.classList.add("participants__item");
+    participantElement.setAttribute("data-id", part.Id);
 
     let selectorElement = document.createElement("div");
-    selectorElement.classList.add("part__selector");
+    selectorElement.classList.add("participant__selector");
 
     let checkboxElement = document.createElement("div");
     checkboxElement.classList.add("checkbox");
@@ -2435,16 +2390,16 @@ function AddItemToParticipant(part) {
     checkboxElement.appendChild(inputElement);
     selectorElement.appendChild(checkboxElement);
 
-    //let imgElement = document.createElement("img");
-    //imgElement.src = "/Media/Image/GetFile/" + image.Id;
-    //imgElement.decoding = "async";
+    let participantSubElement = document.createElement("img");
+    participantSubElement.src = '/images/person.png';
+    participantSubElement.decoding = "async";
 
-    partElement.appendChild(selectorElement);
-   /* imageElement.appendChild(imgElement);*/
+    participantElement.appendChild(selectorElement);
+    participantSubElement.appendChild(selectorElement);
 
     $("#person-data-block")
-        .find(".partes")[0]
-        .appendChild(partElement);
+        .find(".participants")[0]
+        .appendChild(participantElement);
 }
 
 
