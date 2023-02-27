@@ -16,5 +16,7 @@ namespace FamilyTree.Domain.Entities.PersonContent
         public DataCategory DataCategory { get; set; }
 
         public ICollection<DataHolder> DataHolders { get; set; }
+
+        public ICollection<PersonToDataBlocks> Participants { get; set; }
     }
 }

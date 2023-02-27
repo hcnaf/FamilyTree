@@ -242,47 +242,6 @@ namespace FamilyTree.Infrastructure.Migrations
                     b.ToTable("Video");
                 });
 
-            modelBuilder.Entity("FamilyTree.Domain.Entities.PersonContent.CommonEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CommonEvent");
-                });
-
-            modelBuilder.Entity("FamilyTree.Domain.Entities.PersonContent.CommonEventToPersons", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CommonEventId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ParticipantId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CommonEventId");
-
-                    b.HasIndex("ParticipantId");
-
-                    b.ToTable("CommonEventToPersons");
-                });
-
             modelBuilder.Entity("FamilyTree.Domain.Entities.PersonContent.DataBlock", b =>
                 {
                     b.Property<int>("Id")
@@ -483,6 +442,27 @@ namespace FamilyTree.Infrastructure.Migrations
                     b.HasIndex("PrivacyId");
 
                     b.ToTable("DataHolder");
+                });
+
+            modelBuilder.Entity("FamilyTree.Domain.Entities.PersonContent.PersonToDataBlocks", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DataBlockId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PersonId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DataBlockId");
+
+                    b.HasIndex("PersonId");
+
+                    b.ToTable("PersonToDataBlocks");
                 });
 
             modelBuilder.Entity("FamilyTree.Domain.Entities.Privacy.PrivacyEntity", b =>
@@ -820,21 +800,6 @@ namespace FamilyTree.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FamilyTree.Domain.Entities.PersonContent.CommonEventToPersons", b =>
-                {
-                    b.HasOne("FamilyTree.Domain.Entities.PersonContent.CommonEvent", "CommonEvent")
-                        .WithMany("CommonEventToPersons")
-                        .HasForeignKey("CommonEventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FamilyTree.Domain.Entities.Tree.Person", "Participant")
-                        .WithMany("CommonEvent")
-                        .HasForeignKey("ParticipantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("FamilyTree.Domain.Entities.PersonContent.DataBlock", b =>
                 {
                     b.HasOne("FamilyTree.Domain.Entities.PersonContent.DataCategory", "DataCategory")
@@ -909,6 +874,21 @@ namespace FamilyTree.Infrastructure.Migrations
                     b.HasOne("FamilyTree.Domain.Entities.Privacy.PrivacyEntity", "Privacy")
                         .WithMany()
                         .HasForeignKey("PrivacyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FamilyTree.Domain.Entities.PersonContent.PersonToDataBlocks", b =>
+                {
+                    b.HasOne("FamilyTree.Domain.Entities.PersonContent.DataBlock", "DataBlock")
+                        .WithMany("Participants")
+                        .HasForeignKey("DataBlockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FamilyTree.Domain.Entities.Tree.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

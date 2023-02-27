@@ -6,10 +6,14 @@ using FamilyTree.Application.PersonContent.DataCategories.ViewModels;
 using FamilyTree.Application.PersonContent.DataHolders.ViewModels;
 using FamilyTree.Application.Privacy.ViewModels;
 using FamilyTree.Domain.Entities.PersonContent;
+using FamilyTree.Domain.Entities.Tree;
+using FamilyTree.Domain.Enums.PersonContent;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,8 +37,8 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
         {
             DataCategory dataCategory = await _context.DataCategories
                 .Include(dc => dc.DataBlocks)
-                .ThenInclude(db => db.DataHolders)
-                .ThenInclude(dh => dh.Privacy)
+                    .ThenInclude(db => db.DataHolders)
+                        .ThenInclude(dh => dh.Privacy)
                 .SingleOrDefaultAsync(dc => dc.CreatedBy.Equals(request.UserId) &&
                                             dc.Id == request.DataCategoryId,
                                       cancellationToken);
@@ -54,6 +58,16 @@ namespace FamilyTree.Application.PersonContent.DataCategories.Handlers
             List<DataBlock> dataBlocks = dataCategory.DataBlocks
                 .OrderBy(db => db.OrderNumber)
                 .ToList();
+
+            var participantsDataBlocks = await _context.DataBlocks
+                .Include(x => x.DataHolders)
+                        .ThenInclude(dh => dh.Privacy)
+                .Where(x => x.Participants.Select(x => x.PersonId).Contains(dataCategory.PersonId))
+                .ToArrayAsync();
+
+            dataBlocks.AddRange(participantsDataBlocks);
+
+            dataBlocks = dataBlocks.Distinct().ToList();
 
             foreach (DataBlock dataBlock in dataBlocks)
             {

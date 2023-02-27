@@ -39,6 +39,8 @@ namespace FamilyTree.Application.Common.Interfaces
 
         DbSet<DataBlockAudio> DataBlockAudios { get; set; }
 
+        DbSet<PersonToDataBlocks> PersonToDataBlocks { get; set; }
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

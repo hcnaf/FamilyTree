@@ -55,7 +55,8 @@ const CopyObjectTypes = {
     DataHolder: 2,
     Image: 3,
     Video: 4,
-    Audio: 5
+    Audio: 5,
+    Participant: 6
 };
 const CopyObjectSessionStorageKey = "COPY_OBJECT";
 
@@ -68,7 +69,7 @@ let g_currentDataBlock = null;
 let g_currentDataBlockImages = null;
 let g_currentDataBlockVideos = null;
 let g_currentDataBlockAudios = null;
-let g_currentDataBLockParticipants = null;
+let g_currentDataBlockParticipants = null;
 let g_openedAudioId = null;
 let g_currentAddButtonActionType = null;
 let g_editElementId = null;
@@ -80,6 +81,7 @@ let g_copyObject = {
 let g_isUploadingImage = false;
 let g_isUploadingVideo = false;
 let g_isUploadingAudio = false;
+let g_currentParticipantIdToAdd = null;
 
 async function LoadPersonData(personId) {
     g_currentPerson = await GetPersonData(personId).catch((r) => {
@@ -182,10 +184,10 @@ async function GetAudios(dataBlockId) {
 }
 
 async function GetParticipants(dataBlockId) {
-    const result = await $ajax({
+    const result = await $.ajax({
         type: "GET",
         dataType: "json",
-        url: "/Media/Participant/GetAll?dataBLockId=" + dataBlockId
+        url: "/Media/Participant/GetAll?dataBlockId=" + dataBlockId
     });
 
     return result;
@@ -220,6 +222,23 @@ function CreateDataBlock(dataBlock) {
         type: "POST",
         data: dataBlock,
         url: "/PersonContent/DataBlock/Create",
+        success: function (response) {
+            result = response;
+        }
+    });
+
+    return result;
+}
+
+
+async function CreatePart() {
+    let result = -1;
+
+    await $.ajax({
+      
+        type: "POST",
+        data: dataHolder,
+        url: "/PersonContent/DataBlock/UpdateParticipants",
         success: function (response) {
             result = response;
         }
@@ -326,6 +345,20 @@ async function CreateAudio(audio) {
 
     return result;
 }
+
+async function CreateParticipants() {
+    const result = await $.ajax({
+        type: "POST",
+        data: {
+            blockId: g_currentDataBlock.Id,
+            participantIds: g_currentDataBlockParticipants.map(x => x.Id),
+        },
+        url: "/PersonContent/DataBlock/UpdateParticipants",
+    });
+
+    return result;
+}
+
 
 function UpdateDataCategoryName(dataCategory) {
     let result = false;
@@ -663,6 +696,33 @@ async function DeleteAudio(audioId) {
     return result;
 }
 
+async function DeleteParticipant(participantId) {
+    let result = await $.ajax({
+        type: "DELETE",
+        url: "/Media/Audio/Delete/" + audioId
+    });
+
+    return result;
+}
+
+function FillParticipant(person, data) {
+    $(person).find(".surname")[0].innerText = data.Surname;
+
+    $(person).find(".name")[0].innerText = data.Name;
+
+    $(person).find(".middlename")[0].innerText = data.Middlename;
+
+    $(person).find(".birthday")[0].innerText = data.Birthday;
+
+    if (data.AvatarImageId != null) {
+        person.children[1].src = "/Media/Image/GetFile/" + data.AvatarImageId;
+        person.children[1].decoding = "async";
+    } else {
+        person.children[1].src = "/images/person.png";
+        person.children[1].decoding = "async";
+    }
+}
+
 //Events
 function InitPersonDataBlockButtonEvents() {
     $("#person-data-block")
@@ -716,6 +776,9 @@ function InitPersonDataBlockButtonEvents() {
     $("#paste-button")
         .click(OnPasteButtonClick);
 
+    $("#paste-participant-button")
+        .click(OnPasteParticipantButton);
+
     $("#select-all-button")
         .click(OnSelectAllButtonClick);
 
@@ -761,6 +824,12 @@ function InitPersonDataBlockButtonEvents() {
     $("#add-audio-submit-button")
         .click(OnAddAudioSubmitButtonClick);
 
+    $("#add-participant-submit-button")
+        .click(OnAddParticipantSubmitButtonClick);
+
+
+    
+
     $("#save-audio-submit-button")
         .click(OnSaveAudioSubmitButtonClick);
 
@@ -781,14 +850,14 @@ function InitPersonDataBlockButtonEvents() {
     $("#edit-audio-privacy-button")
         .click(OnEditAudioPrivacyButtonClick);
 
-    $("#add-participant-modal")
-        .click(() => console.log('add-participant-modal clicked'));
+    $("#select-participant-to-insert-button")
+        .click(OnSelectParticipantButtonClick);
 }
 
 function OnBackToDataBlocksButtonClick() {
     ShowDataBlocks();
     ShowDataBlockContent(false);
-    ShowBackToDataBlocksButton(false);
+    ShowDataBlockButtons(false);
     ShowSaveButton(false);
     g_currentAddButtonActionType = AddButtonActionTypes.AddDataBlock;
 }
@@ -847,6 +916,7 @@ function OnTabButtonClick(event) {
 }
 
 function OnDataCategoryClick(event) {
+    /*GetParticipants();*/
     if ($(event.target).is("input")) return;
 
     let dataCategoryId = $(event.currentTarget).attr("data-id");
@@ -893,7 +963,7 @@ function OnDataCategoryClick(event) {
         return;
     }
 
-    ShowBackToDataBlocksButton(false);
+    ShowDataBlockButtons(false);
 
     $("#person-data-block")
         .find(".data-categories")
@@ -925,7 +995,7 @@ function OnDataBlockClick(event) {
     RefreshAudios().then((val) => UpdateAudios());
     RefreshParticipants().then((val) => UpdateParticipants());
 
-    ShowBackToDataBlocksButton();
+    ShowDataBlockButtons();
     ShowDataBlocks(false);
     ShowDataBlockContent();
     OpenDefaultDataBlockTab();
@@ -939,6 +1009,16 @@ function OnImageClick(event) {
     UpdateImageSlider(imageId);
 
     $("#image-carousel-modal").modal("show");
+}
+
+function OnPartClick(event) {
+    if ($(event.target).is("input")) return;
+
+    let partId = $(event.currentTarget).attr("data-id");
+
+    UpdateParticipants();
+
+   /* $("#image-carousel-modal").modal("show")*/;
 }
 
 function OnVideoClick(event) {
@@ -976,6 +1056,10 @@ function OnEditDataCategoryButtonClick() {
 
 function OnCopyDataCategoryButtonClick() {
     CopySelectedDataCategories();
+}
+
+function OnSelectParticipantButtonClick() {
+    SelectParticipant();
 }
 
 function OnPasteDataCategoryButtonClick() {
@@ -1032,9 +1116,6 @@ function OnAddElementButtonClick() {
         case AddButtonActionTypes.AddAudio: {
             $("#add-audio-modal").modal("show");
             break;
-        }
-        case AddButtonActionTypes.AddParticipant: {
-            $('#add-participant-modal').modal('show');
         }
 
         default:
@@ -1181,17 +1262,33 @@ function OnAddAudioSubmitButtonClick() {
         g_isUploadingAudio = false;
         audioModal.find("#audio-file").prop("disabled", false);
     });
-    CreateParticipant(formData).then((result) => {
-        audioModal.modal("hide");
-        RefreshParticipants().then((val) => UpdateParticipants());
-        g_isUploadingAudio = false;
-        audioModal.find("#participant").prop("disabled", false);
-    }, (r) => {
-        alert("Ошибка при создании аудио.");
-        g_isUploadingAudio = false;
-        audioModal.find("#participant").prop("disabled", false);
+    //CreateParticipant(formData).then((result) => {
+    //    audioModal.modal("hide");
+    //    RefreshParticipants().then((val) => UpdateParticipants());
+    //    g_isUploadingAudio = false;
+    //    audioModal.find("#participant").prop("disabled", false);
+    //}, (r) => {
+    //    alert("Ошибка при создании аудио.");
+    //    g_isUploadingAudio = false;
+    //    audioModal.find("#participant").prop("disabled", false);
+    //});
+}
+
+
+
+function OnAddParticipantSubmitButtonClick() {
+    let partModal = $("#add-participant-modal");
+
+    partModal.modal("hide");
+    RefreshParticipants().then((val) => UpdateParticipants());
+
+  
+    CreateParticipants().then((result) => {
+       RefreshParticipants().then((val) => UpdateParticipants());
+       partModal.find("#participant").prop("disabled", false);
     });
 }
+
 
 function OnEditElementButtonClick() {
     switch (g_currentAddButtonActionType) {
@@ -1305,6 +1402,13 @@ function OnPasteButtonClick() {
         default:
             break;
     }
+}
+
+function OnPasteParticipantButton() {
+    g_currentDataBlockParticipants.push({ Id: g_currentParticipantIdToAdd });
+    CreateParticipants()
+    .then((res) => RefreshParticipants()
+    .then((val) => UpdateParticipants()));
 }
 
 function OnDeleteButtonClick() {
@@ -1825,17 +1929,17 @@ function UpdateAudios() {
 function UpdateParticipants() {
     ClearParticipants();
 
-    if (g_currentDataBLockParticipants == null)
+    if (g_currentDataBlockParticipants == null)
         return;
 
-        g_currentDataBLockParticipants
+        g_currentDataBlockParticipants
         .forEach((item) => {
-            AddItemToParticipants(item);
+            AddItemToParticipant(item);
         });
 
     $("#person-data-block")
-        .find(".audios .audios__item .audio__play")
-        .click(OnPlayAudioButtonClick);
+        .find(".participants .participants__item")
+        .click(OnPartClick);
 }
 
 function UpdateVideoModal(videoId) {
@@ -1947,7 +2051,7 @@ async function RefreshAudios() {
 }
 
 async function RefreshParticipants() {
-    g_currentDataBLockParticipants = await GetParticipants(g_currentDataBlock.Id);
+    g_currentDataBlockParticipants = await GetParticipants(g_currentDataBlock.Id);
 }
 
 function OpenDefaultDataBlockTab() {
@@ -1958,8 +2062,10 @@ function OpenDefaultDataBlockTab() {
         .click();
 }
 
-function ShowBackToDataBlocksButton(isShow = true) {
+function ShowDataBlockButtons(isShow = true) {
     $("#person-data-block").find("#back-to-data-blocks-button")[0].style.display = isShow ? "inline-block" : "none";
+    $("#person-data-block").find("#paste-participant-button")[0].style.display = isShow ? "inline-block" : "none";
+    $("#person-data-block").find("#tab-button-participants")[0].style.display = isShow ? "" : "none";
 }
 
 function ShowDataBlocks(isShow = true) {
@@ -2281,6 +2387,50 @@ function AddItemToImages(image) {
         .find(".images")[0]
         .appendChild(imageElement);
 }
+
+function AddItemToParticipant(participant) {
+    let participantElement = document.createElement("div");
+    participantElement.classList.add("participant");
+    participantElement.classList.add("participants__item");
+    participantElement.setAttribute("data-id", participant.Id);
+
+        let imgElement = document.createElement("img");
+
+        let selectorElement = document.createElement("div");
+        selectorElement.classList.add("participant__selector");
+        let checkboxElement = document.createElement("div");
+        checkboxElement.classList.add("checkbox");
+        let inputElement = document.createElement("input");
+        inputElement.type = "checkbox";
+        checkboxElement.appendChild(inputElement);
+        selectorElement.appendChild(checkboxElement);
+
+        let infoElement = document.createElement("div");
+            let surnameElement = document.createElement("div");
+            surnameElement.classList.add("surname");
+            let nameElement = document.createElement("div");
+            nameElement.classList.add("name");
+            let middlenameElement = document.createElement("div");
+            middlenameElement.classList.add("middlename");
+            let birthdayElement = document.createElement("div");
+            birthdayElement.classList.add("birthday");
+        infoElement.classList.add("participant_info");
+        infoElement.appendChild(surnameElement);
+        infoElement.appendChild(nameElement);
+        infoElement.appendChild(middlenameElement);
+        infoElement.appendChild(birthdayElement);
+
+    participantElement.appendChild(selectorElement);
+    participantElement.appendChild(imgElement);
+    participantElement.appendChild(infoElement);
+
+    FillParticipant(participantElement, participant);
+
+    $("#person-data-block")
+        .find(".participants")[0]
+        .appendChild(participantElement);
+}
+
 
 function AddItemToVideos(video) {
     let videoElement = document.createElement("div");
@@ -2769,10 +2919,10 @@ function GetSelectedParticipantIds() {
     let result = [];
 
     $("#person-data-block")
-        .find(".participants .participant__item")
+        .find(".participants .participants__item")
         .each((i, el) => {
             if ($(el).find("input[type=\"checkbox\"]").is(":checked")) {
-                result.push(el.getAttribute("data-id"));
+                result.push(parseInt(el.getAttribute("data-id")));
             }
         });
 
@@ -2787,6 +2937,11 @@ function GetImageSliderCurrentImageId() {
 
 function GetVideoModalCurrentVideoId() {
     return $("#video-modal .videos-list .videos-list__item_active")
+        .attr("data-id");
+}
+
+function GetPartModalCurrentPartId() {
+    return $("#part-modal .part-list .part-list__item_active")
         .attr("data-id");
 }
 
@@ -2860,6 +3015,10 @@ function CopySelectedAudios() {
     g_copyObject.Ids = GetSelectedAudiosIds();
     g_copyObject.CopyObjectType = CopyObjectTypes.Audio;
     sessionStorage.setItem(CopyObjectSessionStorageKey, JSON.stringify(g_copyObject));
+}
+
+function SelectParticipant() {
+    g_currentParticipantIdToAdd = g_currentPerson.Id
 }
 
 function PasteDataCategories() {
@@ -3092,7 +3251,13 @@ async function DeleteSelectedParticipants() {
     if (participantIds.length == 0)
         return;
 
-    const promises = participantIds.map(DeleteParticipant);
+    let debug = participantIds.indexOf(g_currentDataBlockParticipants[0].Id);
 
-    await Promise.all(promises);
+    g_currentDataBlockParticipants =
+        g_currentDataBlockParticipants
+            .filter(x => participantIds.indexOf(x.Id) < 0);
+
+    CreateParticipants()
+    .then((res) => RefreshParticipants()
+    .then((val) => UpdateParticipants()));
 }

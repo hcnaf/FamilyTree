@@ -10,5 +10,7 @@ namespace FamilyTree.Application.PersonContent.DataBlocks.ViewModels
         public string Title { get; set; }
 
         public List<DataHolderDto> DataHolders { get; set; }
+
+        public List<ParticipantVM> Participants { get; set; }
     }
 }
