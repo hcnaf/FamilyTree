@@ -25,17 +25,20 @@ namespace FamilyTree.Application.PersonContent.DataBlocks.Handlers
         {
             var dataBlock = await _context.DataBlocks
                 .Include(x => x.Participants)
+                .Include(x => x.DataCategory)
                 .SingleOrDefaultAsync(db => db.Id == request.BlockId, cancellationToken);
 
             if (dataBlock == null)
                 throw new NotFoundException(nameof(DataBlock), request.BlockId);
 
-            //if (dataBlock.DataCategory.PersonId != request.UserId)
-            //    throw new InvalidOperationException("Participants can be edited only from original DataBlock.");
-
+            var updatedParticipantIds = request.ParticipantIds?
+                .Where(x => dataBlock.DataCategory.PersonId != x)
+                .Distinct()
+                .ToArray() ?? Array.Empty<int>();
+            
             CollectionsMerger.Merge(
                 dataBlock.Participants,
-                request.ParticipantIds,
+                updatedParticipantIds,
                 x => x.PersonId,
                 x => x,
                 add: (int personId) => dataBlock.Participants.Add(new PersonToDataBlocks

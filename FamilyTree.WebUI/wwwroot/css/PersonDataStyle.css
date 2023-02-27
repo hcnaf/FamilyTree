@@ -519,6 +519,10 @@ input:focus {
     background-image: url("../lib/bootstrap/icons/clipboard-check.svg");
 }
 
+.button-paste-participant .button-paste-participant__img {
+    background-image: url("../lib/bootstrap/icons/person-add.svg");
+}
+
 .button-privacy .button-privacy__img {
     background-image: url("../lib/bootstrap/icons/lock-fill.svg");
 }
@@ -571,14 +575,9 @@ input:focus {
     content: "Нажмите на + чтобы добавить аудио";
 }
 
-.tab-container.participants:empty::after {
-    content: "Нажмите на + чтобы добавить участника";
-}
-
 .tabs-buttons .tabs-buttons__button {
     height: 75px;
     border: 1px solid lightgray;
-    border-bottom: none;
     text-align: center;
     padding-top: 25px;
     cursor: pointer;
@@ -1207,21 +1206,30 @@ input:focus {
 }
 
 .participants .participants__item {
-    width: 95%;
-    height: 200px;
+    width: 150px;
+    height: 250px;
     border: 1px solid lightgray;
     border-radius: 5px;
     float: left;
     /*padding: 2% 0;*/
     cursor: pointer;
     transition: all ease 0.5s;
-    display: flex;
+    display: grid;
+    background-color: #003050;
+    position: relative;
 }
 
 .participants .participants__item:hover {
     border-color: #0096FF;
     background-color: #0096FF;
     transition: all ease 0.5s;
+}
+
+.participant_info {
+    color: white;
+    font: 20px Segoe UI Semilight sans-serif;
+    position: relative;
+    margin: auto;
 }
 
 .participant img {

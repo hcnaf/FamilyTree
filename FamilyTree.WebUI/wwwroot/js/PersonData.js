@@ -81,7 +81,7 @@ let g_copyObject = {
 let g_isUploadingImage = false;
 let g_isUploadingVideo = false;
 let g_isUploadingAudio = false;
-let g_isUploadingParticipant = false;
+let g_currentParticipantIdToAdd = null;
 
 async function LoadPersonData(personId) {
     g_currentPerson = await GetPersonData(personId).catch((r) => {
@@ -351,7 +351,7 @@ async function CreateParticipants() {
         type: "POST",
         data: {
             blockId: g_currentDataBlock.Id,
-            participantIds: g_currentDataBlockParticipants.filter(x => x.IsSelected).map(x => x.Id),
+            participantIds: g_currentDataBlockParticipants.map(x => x.Id),
         },
         url: "/PersonContent/DataBlock/UpdateParticipants",
     });
@@ -696,27 +696,30 @@ async function DeleteAudio(audioId) {
     return result;
 }
 
-// Заполнение атрибутов персонажа
-function FillPerson(person, data) {
-    $(person).attr("data-value", data.Id);
+async function DeleteParticipant(participantId) {
+    let result = await $.ajax({
+        type: "DELETE",
+        url: "/Media/Audio/Delete/" + audioId
+    });
 
+    return result;
+}
+
+function FillParticipant(person, data) {
     $(person).find(".surname")[0].innerText = data.Surname;
 
     $(person).find(".name")[0].innerText = data.Name;
 
     $(person).find(".middlename")[0].innerText = data.Middlename;
-    // Дополнение: получение даты рождения для вывода в карточке человека.
 
     $(person).find(".birthday")[0].innerText = data.Birthday;
-    // Дополнение: получение даты рождения для вывода в карточке человека.
 
-    // Текстовое представление изображения
     if (data.AvatarImageId != null) {
-        person.firstElementChild.firstElementChild.src = "/Media/Image/GetFile/" + data.AvatarImageId;
-        person.firstElementChild.firstElementChild.decoding = "async";
+        person.children[1].src = "/Media/Image/GetFile/" + data.AvatarImageId;
+        person.children[1].decoding = "async";
     } else {
-        person.firstElementChild.firstElementChild.src = "/images/person.png";
-        person.firstElementChild.firstElementChild.decoding = "async";
+        person.children[1].src = "/images/person.png";
+        person.children[1].decoding = "async";
     }
 }
 
@@ -772,6 +775,9 @@ function InitPersonDataBlockButtonEvents() {
 
     $("#paste-button")
         .click(OnPasteButtonClick);
+
+    $("#paste-participant-button")
+        .click(OnPasteParticipantButton);
 
     $("#select-all-button")
         .click(OnSelectAllButtonClick);
@@ -844,14 +850,14 @@ function InitPersonDataBlockButtonEvents() {
     $("#edit-audio-privacy-button")
         .click(OnEditAudioPrivacyButtonClick);
 
-    $("#add-participant-modal")
-        .click(() => console.log('add-participant-modal clicked'));
+    $("#select-participant-to-insert-button")
+        .click(OnSelectParticipantButtonClick);
 }
 
 function OnBackToDataBlocksButtonClick() {
     ShowDataBlocks();
     ShowDataBlockContent(false);
-    ShowBackToDataBlocksButton(false);
+    ShowDataBlockButtons(false);
     ShowSaveButton(false);
     g_currentAddButtonActionType = AddButtonActionTypes.AddDataBlock;
 }
@@ -957,7 +963,7 @@ function OnDataCategoryClick(event) {
         return;
     }
 
-    ShowBackToDataBlocksButton(false);
+    ShowDataBlockButtons(false);
 
     $("#person-data-block")
         .find(".data-categories")
@@ -989,7 +995,7 @@ function OnDataBlockClick(event) {
     RefreshAudios().then((val) => UpdateAudios());
     RefreshParticipants().then((val) => UpdateParticipants());
 
-    ShowBackToDataBlocksButton();
+    ShowDataBlockButtons();
     ShowDataBlocks(false);
     ShowDataBlockContent();
     OpenDefaultDataBlockTab();
@@ -1052,6 +1058,10 @@ function OnCopyDataCategoryButtonClick() {
     CopySelectedDataCategories();
 }
 
+function OnSelectParticipantButtonClick() {
+    SelectParticipant();
+}
+
 function OnPasteDataCategoryButtonClick() {
     PasteDataCategories();
 }
@@ -1106,9 +1116,6 @@ function OnAddElementButtonClick() {
         case AddButtonActionTypes.AddAudio: {
             $("#add-audio-modal").modal("show");
             break;
-        }
-        case AddButtonActionTypes.AddParticipant: {
-            $('#add-participant-modal').modal('show');
         }
 
         default:
@@ -1395,6 +1402,13 @@ function OnPasteButtonClick() {
         default:
             break;
     }
+}
+
+function OnPasteParticipantButton() {
+    g_currentDataBlockParticipants.push({ Id: g_currentParticipantIdToAdd });
+    CreateParticipants()
+    .then((res) => RefreshParticipants()
+    .then((val) => UpdateParticipants()));
 }
 
 function OnDeleteButtonClick() {
@@ -2048,8 +2062,10 @@ function OpenDefaultDataBlockTab() {
         .click();
 }
 
-function ShowBackToDataBlocksButton(isShow = true) {
+function ShowDataBlockButtons(isShow = true) {
     $("#person-data-block").find("#back-to-data-blocks-button")[0].style.display = isShow ? "inline-block" : "none";
+    $("#person-data-block").find("#paste-participant-button")[0].style.display = isShow ? "inline-block" : "none";
+    $("#person-data-block").find("#tab-button-participants")[0].style.display = isShow ? "" : "none";
 }
 
 function ShowDataBlocks(isShow = true) {
@@ -2372,30 +2388,43 @@ function AddItemToImages(image) {
         .appendChild(imageElement);
 }
 
-function AddItemToParticipant(part) {
+function AddItemToParticipant(participant) {
     let participantElement = document.createElement("div");
     participantElement.classList.add("participant");
     participantElement.classList.add("participants__item");
-    participantElement.setAttribute("data-id", part.Id);
+    participantElement.setAttribute("data-id", participant.Id);
 
-    let selectorElement = document.createElement("div");
-    selectorElement.classList.add("participant__selector");
+        let imgElement = document.createElement("img");
 
-    let checkboxElement = document.createElement("div");
-    checkboxElement.classList.add("checkbox");
+        let selectorElement = document.createElement("div");
+        selectorElement.classList.add("participant__selector");
+        let checkboxElement = document.createElement("div");
+        checkboxElement.classList.add("checkbox");
+        let inputElement = document.createElement("input");
+        inputElement.type = "checkbox";
+        checkboxElement.appendChild(inputElement);
+        selectorElement.appendChild(checkboxElement);
 
-    let inputElement = document.createElement("input");
-    inputElement.type = "checkbox";
-
-    checkboxElement.appendChild(inputElement);
-    selectorElement.appendChild(checkboxElement);
-
-    let participantSubElement = document.createElement("img");
-    participantSubElement.src = '/images/person.png';
-    participantSubElement.decoding = "async";
+        let infoElement = document.createElement("div");
+            let surnameElement = document.createElement("div");
+            surnameElement.classList.add("surname");
+            let nameElement = document.createElement("div");
+            nameElement.classList.add("name");
+            let middlenameElement = document.createElement("div");
+            middlenameElement.classList.add("middlename");
+            let birthdayElement = document.createElement("div");
+            birthdayElement.classList.add("birthday");
+        infoElement.classList.add("participant_info");
+        infoElement.appendChild(surnameElement);
+        infoElement.appendChild(nameElement);
+        infoElement.appendChild(middlenameElement);
+        infoElement.appendChild(birthdayElement);
 
     participantElement.appendChild(selectorElement);
-    participantSubElement.appendChild(selectorElement);
+    participantElement.appendChild(imgElement);
+    participantElement.appendChild(infoElement);
+
+    FillParticipant(participantElement, participant);
 
     $("#person-data-block")
         .find(".participants")[0]
@@ -2893,7 +2922,7 @@ function GetSelectedParticipantIds() {
         .find(".participants .participants__item")
         .each((i, el) => {
             if ($(el).find("input[type=\"checkbox\"]").is(":checked")) {
-                result.push(el.getAttribute("data-id"));
+                result.push(parseInt(el.getAttribute("data-id")));
             }
         });
 
@@ -2986,6 +3015,10 @@ function CopySelectedAudios() {
     g_copyObject.Ids = GetSelectedAudiosIds();
     g_copyObject.CopyObjectType = CopyObjectTypes.Audio;
     sessionStorage.setItem(CopyObjectSessionStorageKey, JSON.stringify(g_copyObject));
+}
+
+function SelectParticipant() {
+    g_currentParticipantIdToAdd = g_currentPerson.Id
 }
 
 function PasteDataCategories() {
@@ -3218,7 +3251,13 @@ async function DeleteSelectedParticipants() {
     if (participantIds.length == 0)
         return;
 
-    const promises = participantIds.map(DeleteParticipant);
+    let debug = participantIds.indexOf(g_currentDataBlockParticipants[0].Id);
 
-    await Promise.all(promises);
+    g_currentDataBlockParticipants =
+        g_currentDataBlockParticipants
+            .filter(x => participantIds.indexOf(x.Id) < 0);
+
+    CreateParticipants()
+    .then((res) => RefreshParticipants()
+    .then((val) => UpdateParticipants()));
 }

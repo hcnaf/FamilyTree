@@ -33,31 +33,14 @@ namespace FamilyTree.WebUI.Controllers.Media
         [HttpGet]
         public async Task<ActionResult<List<ParticipantVM>>> GetAll(int dataBlockId)
         {
-            var a = await Mediator.Send(new GetParticipantsQuery()
+            var res = await Mediator.Send(new GetParticipantsQuery()
             {
                 DataBlockId = dataBlockId
             });
 
-            ViewBag.Participants = a;
+            ViewBag.Participants = res;
 
-            return a;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<List<PartModel>>> GetAll2()
-        {
-           
-            string connectionString = "Server=COMPUTER\\SQLEXPRESS;Database=FamilyTreePzkv22;Trusted_Connection=True;MultipleActiveResultSets=True";
-
-            using (IDbConnection db = new SqlConnection(connectionString))
-            {
-                var a = db.Query<PartModel>("SELECT DataHolderType, Data, IsDeletable, DataBlockId FROM DataHolder").ToList();
-
-                var f = a.FindAll(p=>p.DataBlockId == 8);
-                //ViewBag.Pers = f;
-                return f;
-            }
-
+            return res;
         }
     }
 }

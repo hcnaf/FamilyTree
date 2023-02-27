@@ -49,14 +49,19 @@ namespace FamilyTree.Application.Media.Participants.Handlers
             var result = dataHoldersByParticipant.Select(x => new ParticipantVM
             {
                 Id = x.Key.Id,
-                IsSelected = true,
-                DataHolders = x.Value.Select(dh => new ParticipantDataHolderVM
-                {
-                    Data = dh.Data,
-                    DataBlockId = dh.DataBlockId,
-                    DataHolderType = dh.DataHolderType.ToString(),
-                    IsDeletable = dh.IsDeletable ?? false,
-                }).ToList(),
+                Name = x.Value
+                    .Where(dh => dh.DataHolderType == DataHolderType.Name)
+                    .First().Data,
+                Surname = x.Value
+                    .Where(dh => dh.DataHolderType == DataHolderType.Surname)
+                    .First().Data,
+                Middlename = x.Value
+                    .Where(dh => dh.DataHolderType == DataHolderType.MiddleName)
+                    .First().Data,
+                Birthday = x.Value
+                    .Where(dh => dh.DataHolderType == DataHolderType.Birthday)
+                    .First().Data,
+                AvatarImageId = x.Key.AvatarImageId,
             }).ToList();
 
             return result;
